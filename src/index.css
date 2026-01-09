@@ -1,0 +1,39 @@
+@import "tailwindcss";
+
+
+@theme {
+  --color-midnight: #020617;
+  --color-midnight-light: #07213D;
+  --color-gold-dignity: #EEBF63;
+  --color-platinum: #E0E2E3;
+}
+
+@layer base {
+  * {
+    font-family: "Poppins", sans-serif;
+  }
+}
+
+@layer utilities {
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+}
+
+
+:root {
+  /* Gradient Midnight Blue Utama */
+  --bg-midnight-main: radial-gradient(circle at top, #07213D 0%, #041426 100%);
+}
