@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-// Pastikan path logo sudah sesuai
+
 import logoKemenimipas from '../assets/img/logo_kemenimipas.png';
 import logoDitjenpas from '../assets/img/logo_ditjenpas.png';
 

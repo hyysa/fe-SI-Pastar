@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import logoKemenimipas from '../assets/img/logo_kemenimipas.png';
+import logoPastar from "../assets/img/logo_zi_lapas_blitar.png";
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -31,8 +32,9 @@ export default function Navbar() {
     { 
       name: 'Informasi', 
       submenu: [
-        { name: 'Layanan Publik', path: '/informasi/layanan' },
-        { name: 'Alur Kunjungan', path: '/informasi/alur' },
+        { name: 'Tata Tertib & Ketentuan', path: '/informasi/tata-tertib' },
+        { name: 'Alur Kunjungan', path: '/informasi/alur-kunjungan' },
+        { name: 'Karya WBP', path: '/informasi/karya-wbp' },
         { name: 'Hak Warga Binaan', path: '/informasi/hak-wbp' }
       ] 
     },
@@ -54,12 +56,33 @@ export default function Navbar() {
         <div className="flex items-center justify-between">
           
           {/* LOGO */}
-          <div className="flex items-center gap-3 cursor-pointer" onClick={() => handleNavigation('/')}>
+          {/* <div className="flex items-center gap-3 cursor-pointer" onClick={() => handleNavigation('/')}>
             <img src={logoKemenimipas} alt="Logo" className="h-10 md:h-12 w-auto object-contain" />
             <span className={`font-black tracking-tighter text-xl hidden sm:block ${
               isScrolled || isOpen ? "text-midnight" : "text-white"
             }`}>SI-PASTAR</span>
-          </div>
+          </div> */}
+         
+          {/* LOGO SECTION */}
+<div className="flex items-center gap-3 cursor-pointer group" onClick={() => handleNavigation('/')}>
+  <div className={`transition-all duration-500 p-2 rounded-xl ${
+    isScrolled || isOpen 
+      ? "bg-midnight shadow-lg scale-90" // Saat scroll, logo dibungkus kotak gelap
+      : "bg-transparent"
+  }`}>
+    <img 
+      src={logoPastar} 
+      alt="Logo" 
+      className="h-10 md:h-11 w-auto object-contain" 
+    />
+  </div>
+  
+  <span className={`font-black tracking-tighter text-xl hidden sm:block transition-colors duration-500 ${
+    isScrolled || isOpen ? "text-midnight" : "text-white"
+  }`}>
+    SI-PASTAR
+  </span>
+</div>
 
           {/* --- MENU DESKTOP --- */}
           <div className="hidden md:flex items-center gap-8 h-full">

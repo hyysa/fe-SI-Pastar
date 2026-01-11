@@ -5,9 +5,24 @@ const ScrollToTop = () => {
   const { pathname } = useLocation();
 
   useEffect(() => {
-    // Memaksa browser kembali ke koordinat 0,0 (atas kiri) setiap kali URL berubah
+    
     window.scrollTo(0, 0);
   }, [pathname]);
+
+  useEffect(() => {
+    
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual';
+    }
+
+    window.scrollTo(0, 0);
+
+    return () => {
+      if ('scrollRestoration' in window.history) {
+        window.history.scrollRestoration = 'auto';
+      }
+    };
+  }, []);
 
   return null;
 };
