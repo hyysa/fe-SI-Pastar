@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation, Link } from 'react-router-dom';
-import { Search, Bell, Settings, UserCircle } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { LogOut, UserCircle, Menu } from 'lucide-react';
 
-// Import Logo untuk digunakan sebagai hamburger di mobile
+// Import Logo
 import logoKemenimipas from "../../assets/img/logo_kemenimipas.png";
 
 const NavbarAdmin = ({ onOpenSidebar }) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [isScrolled, setIsScrolled] = useState(false);
+
+  const userData = JSON.parse(localStorage.getItem('user'));
 
   useEffect(() => {
     const handleScroll = () => {
@@ -17,90 +20,110 @@ const NavbarAdmin = ({ onOpenSidebar }) => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const handleLogout = () => {
+    if (window.confirm("Apakah Anda yakin ingin keluar?")) {
+      localStorage.clear();
+      navigate('/login');
+    }
+  };
+
   const getPageTitle = () => {
     const path = location.pathname;
+    
+    // 1. Cek kecocokan statis terlebih dahulu
     const titles = {
       '/admin/dashboard': 'Dashboard',
       '/admin/berita': 'Kelola Berita',
       '/admin/berita/tambah': 'Tambah Berita',
       '/admin/layanan': 'Layanan Publik',
-      '/admin/informasi': 'Data Informasi',
+      '/admin/informasi': 'Informasi Publik',
+      '/admin/karya-wbp': 'Karya WBP',
       '/admin/visi-misi': 'Visi & Misi',
       '/admin/struktur': 'Struktur Organisasi',
       '/admin/sejarah': 'Sejarah Lapas'
     };
-    return titles[path] || 'Panel Admin';
+
+    if (titles[path]) return titles[path];
+
+    // 2. Cek kecocokan dinamis (untuk Edit atau Detail)
+    if (path.startsWith('/admin/berita/edit/')) return 'Edit Berita';
+    if (path.startsWith('/admin/berita/detail/')) return 'Detail Berita';
+    if (path.startsWith('/admin/layanan/edit/')) return 'Edit Layanan';
+
+    return 'Panel Admin';
   };
 
   return (
+    // Penyesuaian margin (mx) agar tidak mepet layar di HP
     <nav 
-      className={`sticky top-4 z-40 flex items-center justify-between px-4 py-3 transition-all duration-300 rounded-2xl mx-2 ${
+      className={`sticky top-2 z-40 flex items-center justify-between px-3 py-2.5 md:px-4 md:py-3 transition-all duration-300 rounded-2xl mx-2 md:mx-4 ${
         isScrolled 
         ? "bg-white/80 backdrop-blur-md shadow-lg border border-white/50" 
         : "bg-white/40 border border-transparent"
       }`}
     >
-      {/* KIRI: Logo (Hamburger) & Breadcrumb */}
-      <div className="flex items-center gap-4">
-        {/* LOGO SEBAGAI TOMBOL MENU (Hanya aktif di Mobile) */}
+      {/* KIRI: Kontrol Sidebar & Judul */}
+      <div className="flex items-center gap-2 md:gap-4 overflow-hidden">
         <button 
           onClick={onOpenSidebar}
-          className="flex items-center justify-center p-1.5 bg-white rounded-xl shadow-sm hover:bg-slate-50 transition-all active:scale-95 lg:cursor-default lg:hover:bg-white"
+          className="flex-shrink-0 flex items-center justify-center p-2 bg-white rounded-xl shadow-sm hover:bg-slate-50 transition-all active:scale-95 lg:cursor-default"
         >
+          {/* Logo tampil di desktop, Icon menu tampil di HP */}
           <img 
             src={logoKemenimipas} 
-            alt="Menu" 
-            className="h-8 w-auto object-contain" 
+            alt="Logo" 
+            className="h-7 w-auto md:h-8 hidden sm:block" 
           />
-          {/* Indikator Animasi kecil (Opsional) - Menandakan ini bisa diklik di mobile */}
-          <span className="absolute -top-1 -right-1 flex h-3 w-3 lg:hidden">
+          <Menu size={20} className="sm:hidden text-slate-600" />
+          
+          {/* Indikator Notif */}
+          <span className="absolute top-1 right-1 flex h-2.5 w-2.5 lg:hidden">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-500"></span>
           </span>
         </button>
 
-        <div className="flex flex-col">
-          <nav aria-label="breadcrumb" className="hidden sm:block">
-            <ol className="flex text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-              <li className="opacity-50">Halaman</li>
-              <li className="before:content-['/'] before:mx-2 text-slate-600">{getPageTitle()}</li>
+        <div className="flex flex-col overflow-hidden">
+          {/* Breadcrumb hanya muncul di layar besar */}
+          <nav aria-label="breadcrumb" className="hidden md:block">
+            <ol className="flex text-[10px] font-black text-slate-400 uppercase tracking-[1px]">
+              <li className="opacity-50">Admin</li>
+              <li className="before:content-['/'] before:mx-2 text-blue-500">{getPageTitle()}</li>
             </ol>
           </nav>
-          <h6 className="font-bold text-slate-800 text-base leading-tight">
+          <h6 className="font-black text-slate-800 text-sm md:text-base leading-tight truncate">
             {getPageTitle()}
           </h6>
         </div>
       </div>
 
-      {/* KANAN: Search & Icons */}
-      <div className="flex items-center gap-2 sm:gap-4">
-        {/* Search Input - Disembunyikan di layar sangat kecil agar tidak sempit */}
-        <div className="hidden sm:flex items-center bg-white/50 border border-gray-200 rounded-xl px-3 py-1.5 focus-within:bg-white focus-within:ring-2 focus-within:ring-blue-100 transition-all">
-          <Search size={16} className="text-gray-400" />
-          <input 
-            type="text" 
-            placeholder="Cari..." 
-            className="ml-2 bg-transparent outline-none text-sm text-slate-700 w-20 md:w-32 lg:w-44"
-          />
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex items-center gap-1">
-          
-          <div className="relative">
-            <button className="p-2 text-slate-500 hover:bg-white rounded-lg transition-colors">
-              <Bell size={18} />
-            </button>
-            <span className="absolute top-2 right-2 w-2 h-2 bg-orange-500 border-2 border-white rounded-full"></span>
+      {/* KANAN: User Profile & Action */}
+      <div className="flex items-center gap-1.5 md:gap-3 flex-shrink-0">
+        
+        {/* User Info Card */}
+        <div className="flex items-center gap-2 pl-2 pr-1 md:px-3 py-1 bg-white/60 rounded-xl md:rounded-2xl border border-white/50 shadow-sm">
+          <div className="flex flex-col items-end hidden sm:flex">
+            <span className="text-[11px] font-black text-slate-800 leading-none truncate max-w-[100px]">
+              {userData?.nama || 'Admin'}
+            </span>
+            <span className="text-[9px] font-bold text-blue-600 uppercase tracking-tighter">
+              {userData?.username || 'Petugas'}
+            </span>
           </div>
-
-          <button className="ml-2 flex items-center gap-2 p-1 pr-3 bg-slate-800 text-white rounded-xl hover:bg-slate-700 transition-all shadow-sm">
-            <div className="bg-white/20 p-1 rounded-lg">
-              <UserCircle size={18} />
-            </div>
-            <span className="text-xs font-bold hidden md:block">Profil</span>
-          </button>
+          <div className="h-7 w-7 md:h-8 md:w-8 rounded-lg md:rounded-xl bg-slate-900 flex items-center justify-center text-white shadow-md">
+            <UserCircle size={18} />
+          </div>
         </div>
+
+        {/* Tombol Logout - Ukuran disesuaikan untuk HP */}
+        <button 
+          onClick={handleLogout}
+          className="p-2 md:p-2.5 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white rounded-xl transition-all shadow-sm active:scale-90"
+          title="Keluar"
+        >
+          <LogOut size={16} md:size={18} />
+        </button>
+
       </div>
     </nav>
   );

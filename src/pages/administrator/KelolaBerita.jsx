@@ -1,202 +1,271 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import { 
-  Plus, Search, Edit2, Trash2, Eye, 
-  Newspaper, CheckCircle, Clock, ChevronUp, ChevronDown,
-  Globe, FileEdit // Icon tambahan untuk Quick Action
+  useReactTable, 
+  getCoreRowModel, 
+  getSortedRowModel, 
+  getFilteredRowModel,
+  getPaginationRowModel,
+  flexRender 
+} from '@tanstack/react-table';
+import { 
+  Plus, Search, Edit2, Trash2, Newspaper, CheckCircle, 
+  Clock, ChevronUp, ChevronDown, Globe, FileEdit, 
+  Loader2, ChevronLeft, ChevronRight, Eye, Calendar,
+  History
 } from 'lucide-react';
+
+// Import konfigurasi dinamis
+import { API_BASE_URL, IMG_BASE_URL, getAuthHeader } from '../../utils/api';
 
 const KelolaBerita = () => {
   const navigate = useNavigate();
+  const [dataBerita, setDataBerita] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchValue, setSearchValue] = useState(''); 
+  const [globalFilter, setGlobalFilter] = useState(''); 
+  const [sorting, setSorting] = useState([{ id: 'created_at', desc: true }]);
 
-  // State awal (Nantinya diganti dengan data dari Express.js)
-  const [dataBerita, setDataBerita] = useState([
-    { id: 1, judul: "Kegiatan Kerohanian Warga Binaan", kategori: "Pembinaan", tanggal: "2025-12-23", status: "Published" },
-    { id: 2, judul: "Kunjungan Kerja Kakanwil", kategori: "Kedinasan", tanggal: "2025-12-20", status: "Draft" },
-    { id: 3, judul: "Pelatihan Kemandirian Meubel", kategori: "Kemandirian", tanggal: "2025-12-18", status: "Published" },
-  ]);
+  // Debounce search
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      setGlobalFilter(searchValue);
+    }, 300);
+    return () => clearTimeout(timeout);
+  }, [searchValue]);
 
-  // --- LOGIKA QUICK ACTION ---
-  const handleToggleStatus = (id, currentStatus) => {
+  // Ambil Data Berita
+  const fetchBerita = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(`${API_BASE_URL}/berita`);
+      const result = response.data.data || response.data;
+      setDataBerita(Array.isArray(result) ? result : []);
+    } catch (error) {
+      console.error("Gagal mengambil data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchBerita(); }, []);
+
+  // Update Status
+  const handleToggleStatus = async (id, currentStatus) => {
     const newStatus = currentStatus === 'Draft' ? 'Published' : 'Draft';
-    
-    // Simulasi update state (Nantinya pakai axios.patch ke backend)
-    const updatedData = dataBerita.map(item => 
-      item.id === id ? { ...item, status: newStatus } : item
-    );
-    
-    setDataBerita(updatedData);
-    alert(`Berita berhasil diubah menjadi ${newStatus}`);
-  };
-
-  const handleDelete = (id) => {
-    if(window.confirm("Apakah Anda yakin ingin menghapus berita ini?")) {
-      setDataBerita(dataBerita.filter(item => item.id !== id));
+    if (!window.confirm(`Ubah status berita menjadi ${newStatus}?`)) return;
+    try {
+      await axios.put(`${API_BASE_URL}/berita/status/${id}`, { status: newStatus }, getAuthHeader());
+      setDataBerita(prev => prev.map(item => item.id === id ? { ...item, status: newStatus } : item));
+    } catch (error) { 
+      alert("Gagal update status."); 
     }
   };
 
-  // --- LOGIKA SORTING ---
-  const [sortConfig, setSortConfig] = useState({ key: 'tanggal', direction: 'desc' });
-
-  const requestSort = (key) => {
-    let direction = 'asc';
-    if (sortConfig.key === key && sortConfig.direction === 'asc') {
-      direction = 'desc';
+  // Hapus Berita
+  const handleDelete = async (id) => {
+    if (!window.confirm("Hapus berita permanen?")) return;
+    try {
+      await axios.delete(`${API_BASE_URL}/berita/${id}`, getAuthHeader());
+      setDataBerita(prev => prev.filter(item => item.id !== id));
+    } catch (error) { 
+      alert("Gagal menghapus."); 
     }
-    setSortConfig({ key, direction });
   };
 
-  const sortedData = useMemo(() => {
-    let sortableItems = [...dataBerita];
-    if (sortConfig.key !== null) {
-      sortableItems.sort((a, b) => {
-        if (a[sortConfig.key] < b[sortConfig.key]) return sortConfig.direction === 'asc' ? -1 : 1;
-        if (a[sortConfig.key] > b[sortConfig.key]) return sortConfig.direction === 'asc' ? 1 : -1;
-        return 0;
-      });
-    }
-    return sortableItems;
-  }, [dataBerita, sortConfig]);
+  const columns = useMemo(() => [
+    {
+      id: 'no',
+      header: 'No',
+      cell: (info) => (info.row.index + 1 + info.table.getState().pagination.pageIndex * info.table.getState().pagination.pageSize).toString().padStart(2, '0'),
+      className: "w-10 text-center font-bold text-slate-300 text-[10px]",
+    },
+    {
+      accessorKey: 'judul',
+      header: 'Informasi Berita',
+      cell: ({ row }) => {
+        const item = row.original;
+        
+        // Format Tanggal Kegiatan (dari kolom 'tanggal' di database)
+        const formatTglKegiatan = (tgl) => {
+          if(!tgl) return "Tanggal tidak set";
+          return new Date(tgl).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+        };
 
-  const getSortIcon = (name) => {
-    if (sortConfig.key !== name) return <ChevronUp size={12} className="opacity-20" />;
-    return sortConfig.direction === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />;
-  };
+        return (
+          <div className="flex items-center gap-2 md:gap-3 min-w-[250px]">
+            <div className="w-10 h-10 md:w-14 md:h-14 rounded-lg bg-slate-100 overflow-hidden shrink-0 border border-slate-100">
+              <img 
+                src={`${IMG_BASE_URL}${item.gambar}`} 
+                alt="" 
+                className="w-full h-full object-cover"
+                onError={(e) => e.target.src = 'https://via.placeholder.com/150?text=No+Img'}
+              />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] md:text-[13px] font-bold text-slate-700 leading-tight line-clamp-2">{item.judul}</p>
+              
+              {/* TANGGAL KEGIATAN (Di bawah Judul) */}
+              <div className="flex items-center gap-1 mt-1 text-blue-500">
+                <Calendar size={10} className="shrink-0" />
+                <span className="text-[9px] md:text-[10px] font-bold italic">
+                  Kegiatan: {formatTglKegiatan(item.tanggal)}
+                </span>
+              </div>
+
+              <span className="md:hidden px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded text-[8px] font-black uppercase italic tracking-tighter mt-1 inline-block">
+                {item.kategori}
+              </span>
+            </div>
+          </div>
+        );
+      }
+    },
+    {
+      accessorKey: 'kategori',
+      header: 'Kategori',
+      className: 'hidden md:table-cell',
+      cell: (info) => (
+        <span className="px-2 py-1 bg-slate-100 text-slate-500 rounded text-[10px] font-black uppercase italic tracking-tight">
+          {info.getValue()}
+        </span>
+      )
+    },
+    {
+      accessorKey: 'created_at',
+      header: 'Data Dibuat',
+      className: 'hidden lg:table-cell',
+      cell: (info) => {
+        const date = new Date(info.getValue());
+        return (
+          <div className="flex flex-col opacity-70">
+            <div className="flex items-center gap-1 text-slate-600">
+                <History size={10} />
+                <span className="text-[10px] font-bold">
+                  {date.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
+                </span>
+            </div>
+            <span className="text-[9px] text-slate-400 font-medium uppercase ml-3.5">
+              Pukul {date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+            </span>
+          </div>
+        )
+      }
+    },
+    {
+      accessorKey: 'status',
+      header: 'Status',
+      className: "w-24 text-center",
+      cell: ({ row }) => (
+        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[8px] md:text-[9px] font-black uppercase tracking-wider ${
+          row.original.status === 'Published' ? 'bg-green-500 text-white shadow-sm' : 'bg-amber-100 text-amber-700 border border-amber-200'
+        }`}>
+          {row.original.status}
+        </span>
+      )
+    },
+    {
+      id: 'aksi',
+      header: () => <div className="text-center">Aksi</div>,
+      className: "w-32",
+      cell: ({ row }) => {
+        const isDraft = row.original.status === 'Draft';
+        return (
+          <div className="flex items-center justify-center gap-1">
+            <button onClick={() => navigate(`/admin/berita/detail/${row.original.id}`)} className="p-1.5 bg-blue-50 text-blue-500 rounded-lg border border-blue-100 hover:bg-blue-500 hover:text-white transition-all"><Eye size={14} /></button>
+            <button onClick={() => handleToggleStatus(row.original.id, row.original.status)} className={`p-1.5 rounded-lg border transition-all ${isDraft ? 'bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-600 hover:text-white' : 'bg-amber-50 text-amber-600 border-amber-100 hover:bg-amber-600 hover:text-white'}`}>{isDraft ? <Globe size={14} /> : <FileEdit size={14} />}</button>
+            <button onClick={() => navigate(`/admin/berita/edit/${row.original.id}`)} className="p-1.5 bg-slate-50 text-slate-400 rounded-lg border border-slate-100 hover:bg-slate-200 hover:text-slate-600"><Edit2 size={14} /></button>
+            <button onClick={() => handleDelete(row.original.id)} className="p-1.5 bg-red-50 text-red-400 rounded-lg border border-red-100 hover:bg-red-500 hover:text-white transition-all"><Trash2 size={14} /></button>
+          </div>
+        );
+      }
+    }
+  ], [navigate]);
+
+  const table = useReactTable({
+    data: dataBerita,
+    columns,
+    state: { sorting, globalFilter },
+    onSortingChange: setSorting,
+    onGlobalFilterChange: setGlobalFilter,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    initialState: { pagination: { pageSize: 10 } },
+  });
 
   return (
-    <div className="space-y-6 p-4">
-      {/* 1. Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+    <div className="p-2 md:p-6 space-y-4 max-w-full overflow-hidden bg-slate-50/30 min-h-screen font-sans text-slate-900">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 px-1">
         {[
           { label: 'Total Berita', val: dataBerita.length, icon: <Newspaper />, color: 'blue' },
-          { label: 'Published', val: dataBerita.filter(d => d.status === 'Published').length, icon: <CheckCircle />, color: 'green' },
-          { label: 'Draft', val: dataBerita.filter(d => d.status === 'Draft').length, icon: <Clock />, color: 'amber' },
+          { label: 'Terbit (Live)', val: dataBerita.filter(d => d.status === 'Published').length, icon: <CheckCircle />, color: 'green' },
+          { label: 'Arsip (Draft)', val: dataBerita.filter(d => d.status === 'Draft').length, icon: <Clock />, color: 'amber' },
         ].map((stat, i) => (
-          <div key={i} className="bg-white p-5 rounded-[24px] shadow-sm border border-slate-50 flex items-center gap-4">
-            <div className={`p-3 rounded-2xl ${
-              stat.color === 'blue' ? 'bg-blue-50 text-blue-600' : 
-              stat.color === 'green' ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-600'
-            }`}>
-              {React.cloneElement(stat.icon, { size: 22 })}
-            </div>
+          <div key={i} className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
+            <div className={`p-2.5 rounded-xl ${stat.color === 'blue' ? 'bg-blue-50 text-blue-600' : stat.color === 'green' ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-600'}`}>{React.cloneElement(stat.icon, { size: 18 })}</div>
             <div>
-              <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">{stat.label}</p>
-              <p className="text-2xl font-black text-slate-800 leading-tight">{stat.val}</p>
+              <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest leading-none mb-1">{stat.label}</p>
+              <p className="text-lg font-black text-slate-800 leading-none">{stat.val}</p>
             </div>
           </div>
         ))}
       </div>
 
-      {/* 2. Main Table Card */}
-      <div className="bg-white rounded-[32px] shadow-sm border border-slate-50 overflow-hidden">
-        <div className="p-8 pb-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div>
-            <h2 className="text-xl font-black text-slate-800 tracking-tight">Kelola Artikel</h2>
-            <p className="text-xs font-medium text-slate-400">Total {dataBerita.length} berita terdaftar dalam sistem</p>
-          </div>
-          
-          <div className="flex items-center gap-3 w-full md:w-auto">
-            <div className="relative flex-1">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-              <input 
-                type="text" 
-                placeholder="Cari berita..." 
-                className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl text-sm outline-none focus:bg-white focus:ring-4 focus:ring-blue-50 transition-all font-medium"
-              />
+      <div className="bg-white rounded-[24px] md:rounded-[32px] shadow-sm border border-slate-100 overflow-hidden mx-1">
+        <div className="p-5 md:p-8 space-y-4 border-b border-slate-50">
+          <div className="flex justify-between items-center gap-2">
+            <div>
+              <h2 className="text-base md:text-xl font-black text-slate-800 tracking-tight leading-none">Manajemen Berita</h2>
+              <p className="text-[9px] md:text-xs text-slate-400 font-medium mt-1 uppercase tracking-widest italic">Lapas Kelas IIB Blitar</p>
             </div>
-            <button 
-              onClick={() => navigate('/admin/berita/tambah')}
-              className="flex items-center gap-2 bg-slate-900 hover:bg-black text-white px-6 py-3 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-slate-200"
-            >
-              <Plus size={16} /> Tambah
-            </button>
+            <button onClick={() => navigate('/admin/berita/tambah')} className="bg-slate-900 text-white px-3 py-2.5 md:px-6 md:py-3 rounded-xl md:rounded-2xl font-black text-[9px] md:text-[10px] uppercase tracking-widest flex items-center gap-1.5 shadow-lg shadow-slate-200"><Plus size={14} /> TAMBAH BERITA</button>
+          </div>
+          <div className="relative">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+            <input value={searchValue} onChange={e => setSearchValue(e.target.value)} placeholder="Cari berita..." className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-xl md:rounded-2xl text-[11px] md:text-sm outline-none focus:ring-2 focus:ring-blue-100 transition-all font-medium" />
           </div>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="bg-slate-50/50">
-                {[
-                  { label: 'Judul Berita', key: 'judul' },
-                  { label: 'Kategori', key: 'kategori' },
-                  { label: 'Tanggal', key: 'tanggal' },
-                  { label: 'Status', key: 'status' },
-                ].map((col) => (
-                  <th 
-                    key={col.key}
-                    onClick={() => requestSort(col.key)}
-                    className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-[2px] cursor-pointer hover:text-blue-600 transition-colors"
-                  >
-                    <div className="flex items-center gap-1">
-                      {col.label} {getSortIcon(col.key)}
-                    </div>
-                  </th>
-                ))}
-                <th className="px-8 py-5 text-center text-[10px] font-black text-slate-400 uppercase tracking-[2px]">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-50">
-              {sortedData.map((item) => (
-                <tr key={item.id} className="hover:bg-slate-50/30 transition-colors group">
-                  <td className="px-8 py-5">
-                    <span className="text-sm font-bold text-slate-700 block truncate max-w-xs group-hover:text-blue-600 transition-colors">
-                      {item.judul}
-                    </span>
-                  </td>
-                  <td className="px-8 py-5">
-                    <span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-lg text-[10px] font-bold uppercase">{item.kategori}</span>
-                  </td>
-                  <td className="px-8 py-5 text-xs font-bold text-slate-400">{item.tanggal}</td>
-                  <td className="px-8 py-5">
-                    <span className={`px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-wider shadow-sm ${
-                      item.status === 'Published' 
-                      ? 'bg-green-500 text-white' 
-                      : 'bg-amber-100 text-amber-700'
-                    }`}>
-                      {item.status}
-                    </span>
-                  </td>
-                  <td className="px-8 py-5">
-                    <div className="flex items-center justify-center gap-2">
-                      {/* QUICK ACTION STATUS */}
-                      <button 
-                        onClick={() => handleToggleStatus(item.id, item.status)}
-                        className={`p-2 rounded-xl transition-all shadow-sm border ${
-                          item.status === 'Draft' 
-                          ? 'bg-green-50 border-green-100 text-green-600 hover:bg-green-600 hover:text-white' 
-                          : 'bg-slate-50 border-slate-100 text-slate-400 hover:bg-slate-200'
-                        }`}
-                        title={item.status === 'Draft' ? 'Terbitkan' : 'Tarik ke Draft'}
-                      >
-                        {item.status === 'Draft' ? <Globe size={16} /> : <FileEdit size={16} />}
-                      </button>
-
-                      <button className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all border border-transparent hover:border-blue-100"><Eye size={16} /></button>
-                      <button 
-                        onClick={() => navigate(`/admin/berita/edit/${item.id}`)}
-                        className="p-2 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-xl transition-all border border-transparent hover:border-amber-100"
-                      ><Edit2 size={16} /></button>
-                      <button 
-                        onClick={() => handleDelete(item.id)}
-                        className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all border border-transparent hover:border-red-100"
-                      ><Trash2 size={16} /></button>
-                    </div>
-                  </td>
+          <table className="min-w-full divide-y divide-slate-100">
+            <thead className="bg-slate-50/50">
+              {table.getHeaderGroups().map(headerGroup => (
+                <tr key={headerGroup.id}>
+                  {headerGroup.headers.map(header => (
+                    <th key={header.id} className={`px-4 py-3 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest cursor-pointer ${header.column.columnDef.className}`} onClick={header.column.getToggleSortingHandler()}>
+                      <div className="flex items-center gap-1">
+                        {flexRender(header.column.columnDef.header, header.getContext())}
+                        {{ asc: <ChevronUp size={10} />, desc: <ChevronDown size={10} /> }[header.column.getIsSorted()] ?? null}
+                      </div>
+                    </th>
+                  ))}
                 </tr>
               ))}
+            </thead>
+            <tbody className="bg-white divide-y divide-slate-50">
+              {loading ? (
+                <tr><td colSpan={columns.length} className="py-20 text-center"><Loader2 className="animate-spin mx-auto text-slate-200" size={32} /></td></tr>
+              ) : table.getRowModel().rows.length > 0 ? (
+                table.getRowModel().rows.map(row => (
+                  <tr key={row.id} className="hover:bg-slate-50/50 transition-colors">
+                    {row.getVisibleCells().map(cell => (<td key={cell.id} className={`px-4 py-3 ${cell.column.columnDef.className}`}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>))}
+                  </tr>
+                ))
+              ) : (
+                <tr><td colSpan={columns.length} className="py-12 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">Data Tidak Ditemukan</td></tr>
+              )}
             </tbody>
           </table>
         </div>
 
-        {/* Footer Pagination */}
-        <div className="p-8 flex flex-col sm:flex-row justify-between items-center gap-4 bg-slate-50/50">
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-            Menampilkan <span className="text-slate-700">{sortedData.length}</span> dari <span className="text-slate-700">124</span> Data Artikel
-          </p>
-          <div className="flex gap-3">
-            <button className="px-5 py-2.5 bg-white border border-slate-200 rounded-xl text-[10px] font-black text-slate-400 uppercase tracking-widest hover:bg-slate-100 transition-all disabled:opacity-50">Prev</button>
-            <button className="px-5 py-2.5 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-slate-200 hover:bg-black transition-all">Next</button>
+        <div className="px-5 py-4 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between">
+          <p className="text-[10px] md:text-xs font-bold text-slate-500 uppercase tracking-tighter">Halaman {table.getState().pagination.pageIndex + 1} dari {table.getPageCount()}</p>
+          <div className="flex gap-1.5">
+            <button onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()} className="p-2 rounded-xl bg-white border border-slate-200 disabled:opacity-30 hover:bg-slate-50 shadow-sm"><ChevronLeft size={16} /></button>
+            <button onClick={() => table.nextPage()} disabled={!table.getCanNextPage()} className="p-2 rounded-xl bg-white border border-slate-200 disabled:opacity-30 hover:bg-slate-50 shadow-sm"><ChevronRight size={16} /></button>
           </div>
         </div>
       </div>

@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import logoKemenimipas from '../assets/img/logo_kemenimipas.png';
 import logoPastar from "../assets/img/logo_zi_lapas_blitar.png";
 
 export default function Navbar() {
@@ -30,22 +29,34 @@ export default function Navbar() {
     { name: 'Beranda', path: '/' },
     { name: 'Berita', path: '/berita' },
     { 
-      name: 'Informasi', 
+      name: 'Layanan', 
       submenu: [
+        { name: 'Layanan Kunjungan Online', path: '/form-layanan' },
+        { name: 'Pengaduan', path: '/layanan/pengaduan' }
+      ] 
+    },
+    { 
+      name: 'Informasi Publik', 
+      submenu: [
+        { name: 'LAKIP', path: '/informasi/lakip' },
+        { name: 'DIPA', path: '/informasi/dipa' },
+        { name: 'Rencana Strategis', path: '/informasi/rencana-strategis' },
+        { name: 'Perjanjian Kerja', path: '/informasi/perjanjian-kerja' },
         { name: 'Tata Tertib & Ketentuan', path: '/informasi/tata-tertib' },
         { name: 'Alur Kunjungan', path: '/informasi/alur-kunjungan' },
-        { name: 'Karya WBP', path: '/informasi/karya-wbp' },
-        { name: 'Hak Warga Binaan', path: '/informasi/hak-wbp' }
+        { name: 'Hak Warga Binaan', path: '/informasi/hak-wbp' },
       ] 
     },
     { 
       name: 'Profil', 
       submenu: [
+        { name: 'Profil', path: '/profil/profil' },
         { name: 'Visi & Misi', path: '/profil/visi-misi' },
         { name: 'Struktur Organisasi', path: '/profil/struktur' },
         { name: 'Sejarah', path: '/profil/sejarah' }
       ] 
     },
+    { name: 'Karya WBP', path: '/karya-wbp' },
   ];
 
   return (
@@ -55,34 +66,26 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-6">
         <div className="flex items-center justify-between">
           
-          {/* LOGO */}
-          {/* <div className="flex items-center gap-3 cursor-pointer" onClick={() => handleNavigation('/')}>
-            <img src={logoKemenimipas} alt="Logo" className="h-10 md:h-12 w-auto object-contain" />
-            <span className={`font-black tracking-tighter text-xl hidden sm:block ${
-              isScrolled || isOpen ? "text-midnight" : "text-white"
-            }`}>SI-PASTAR</span>
-          </div> */}
-         
           {/* LOGO SECTION */}
-<div className="flex items-center gap-3 cursor-pointer group" onClick={() => handleNavigation('/')}>
-  <div className={`transition-all duration-500 p-2 rounded-xl ${
-    isScrolled || isOpen 
-      ? "bg-midnight shadow-lg scale-90" // Saat scroll, logo dibungkus kotak gelap
-      : "bg-transparent"
-  }`}>
-    <img 
-      src={logoPastar} 
-      alt="Logo" 
-      className="h-10 md:h-11 w-auto object-contain" 
-    />
-  </div>
-  
-  <span className={`font-black tracking-tighter text-xl hidden sm:block transition-colors duration-500 ${
-    isScrolled || isOpen ? "text-midnight" : "text-white"
-  }`}>
-    SI-PASTAR
-  </span>
-</div>
+          <div className="flex items-center gap-3 cursor-pointer group" onClick={() => handleNavigation('/')}>
+            <div className={`transition-all duration-500 p-2 rounded-xl ${
+              isScrolled || isOpen 
+                ? "bg-midnight shadow-lg scale-90" 
+                : "bg-transparent"
+            }`}>
+              <img 
+                src={logoPastar} 
+                alt="Logo" 
+                className="h-10 md:h-11 w-auto object-contain" 
+              />
+            </div>
+            
+            <span className={`font-black tracking-tighter text-xl hidden sm:block transition-colors duration-500 ${
+              isScrolled || isOpen ? "text-midnight" : "text-white"
+            }`}>
+              SI-PASTAR
+            </span>
+          </div>
 
           {/* --- MENU DESKTOP --- */}
           <div className="hidden md:flex items-center gap-8 h-full">
@@ -107,7 +110,7 @@ export default function Navbar() {
                   )}
                 </button>
 
-                {/* DROPDOWN MENU - DIBENAHI DISINI */}
+                {/* DROPDOWN MENU */}
                 {item.submenu && activeDropdown === item.name && (
                   <div className="absolute top-full left-0 pt-4 w-56 animate-in fade-in slide-in-from-top-2 duration-200">
                     <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden">
@@ -128,16 +131,6 @@ export default function Navbar() {
               </div>
             ))}
           </div>
-
-          {/* BUTTON LAYANAN */}
-          <button 
-            onClick={() => handleNavigation('/form-layanan')}
-            className={`hidden md:block px-8 py-2.5 rounded-full text-sm font-bold transition-all shadow-lg active:scale-95 ${
-              isScrolled ? "bg-midnight text-white shadow-midnight/20" : "bg-gold-dignity text-midnight"
-            }`}
-          >
-            Layanan
-          </button>
 
           {/* HAMBURGER (Mobile) */}
           <button onClick={() => setIsOpen(!isOpen)} className="md:hidden p-2 z-50">
@@ -182,14 +175,8 @@ export default function Navbar() {
               )}
             </div>
           ))}
-          <button 
-            onClick={() => handleNavigation('/form-layanan')}
-            className="w-full mt-8 py-4 bg-gold-dignity text-midnight font-black rounded-2xl"
-          >
-            LAYANAN ONLINE
-          </button>
         </div>
       </div>
     </nav>
   );
-} 
+}
