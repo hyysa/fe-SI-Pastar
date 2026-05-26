@@ -33,6 +33,7 @@ import Pengaduan from "./pages/Pengaduan";
 import TataTertib from "./pages/TataTertib";
 import AlurKunjungan from "./pages/AlurKunjungan";
 import HakWargaBinaan from "./pages/HakWargaBinaan";
+import LayananIntegrasi from "./pages/LayananIntegrasi";
 
 // Admin Pages
 import DashboardAdmin from "./pages/administrator/Dashboard";
@@ -50,6 +51,9 @@ import KelolaVideo from "./pages/administrator/KelolaVideo";
 import AdminPengaduan from "./pages/administrator/AdminPengaduan";
 import GaleriKegiatan from "./pages/administrator/GaleriKegiatan";
 import AdminUsers from "./pages/administrator/AdminUsers";
+import AdminSlider from "./pages/administrator/AdminSlider";
+import AdminIntegrasi from "./pages/administrator/AdminIntegrasi";
+import AdminTataTertib from "./pages/administrator/AdminTataTertib";
 
 function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -102,10 +106,20 @@ function App() {
                         <Route path="hak-akses" element={<AdminUsers/>}/>
                       </Route>
 
+                      {/* FILTER ROLE: BINADIK & PENGAWAS */}
+                      <Route element={<ProtectedRoute allowedRoles={['pengawas', 'binadik']}/>}>
+                        <Route path="persyaratan-integrasi" element={<AdminIntegrasi/>} />
+                      </Route>
+
                       {/* FILTER ROLE: BINADIK, ADKAMTIB & PENGAWAS */}
                       <Route element={<ProtectedRoute allowedRoles={['pengawas', 'binadik', 'adkamtib']}/>}>
                         <Route path="layanan" element={<LayananPublik/>} />
                         <Route path="alur-kunjungan" element={<AdminAlurKunjungan/>} />
+                      </Route>
+
+                      {/* FILTER ROLE: Humas, ADKAMTIB & PENGAWAS */}
+                      <Route element={<ProtectedRoute allowedRoles={['pengawas', 'humas', 'adkamtib']}/>}>
+                        <Route path="tata-tertib" element={<AdminTataTertib/>} />
                       </Route>
 
                       {/* FILTER ROLE: HUMAS & PENGAWAS */}
@@ -117,6 +131,7 @@ function App() {
                         <Route path="informasi" element={<InformasiPublik/>} />
                         <Route path="struktur" element={<DataStruktur/>} />
                         <Route path="video" element={<KelolaVideo/>} />
+                        <Route path="set-slider" element={<AdminSlider/>} />
                       </Route>
 
                       {/* FILTER ROLE: BINADIK, HUMAS & PENGAWAS */}
@@ -163,6 +178,7 @@ function App() {
                   <Route path="/informasi/hak-wbp" element={<HakWargaBinaan />} />
                   <Route path="/form-layanan" element={<FormLayanan />} />
                   <Route path="/layanan/pengaduan" element={<Pengaduan />} />
+                  <Route path="/layanan/layanan-integrasi" element={<LayananIntegrasi />} />
                   <Route path="/berita/:id" element={<DetailBeritaUser />} />
                   <Route path="/profil/profil" element={<Profil />} />
                   <Route path="/profil/visi-misi" element={<VisiMisi />} />

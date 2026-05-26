@@ -32,7 +32,8 @@ export default function Navbar() {
       name: 'Layanan', 
       submenu: [
         { name: 'Layanan Kunjungan Online', path: '/form-layanan' },
-        { name: 'Pengaduan', path: '/layanan/pengaduan' }
+        { name: 'Pengaduan', path: '/layanan/pengaduan' },
+        { name: 'Layanan Integrasi (PB/CB/CMB)', path: '/layanan/layanan-integrasi' },
       ] 
     },
     { 

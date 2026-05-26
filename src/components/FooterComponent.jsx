@@ -26,10 +26,10 @@ const FooterComponent = () => {
           <div>
             <h4 className="text-gold-dignity font-semibold mb-6">Informasi</h4>
             <ul className="space-y-4 text-sm text-gray-400">
-              <li><a href="#" className="hover:text-white transition-colors">Tata Tertib & Ketentuan</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Alur Kunjungan</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Karya WBP</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Hak Warga Binaan</a></li>
+              <li><a href="/informasi/tata-tertib" className="hover:text-white transition-colors">Tata Tertib & Ketentuan</a></li>
+              <li><a href="/informasi/alur-kunjungan" className="hover:text-white transition-colors">Alur Kunjungan</a></li>
+              <li><a href="/karya-wbp" className="hover:text-white transition-colors">Karya WBP</a></li>
+              <li><a href="/informasi/hak-wbp" className="hover:text-white transition-colors">Hak Warga Binaan</a></li>
             </ul>
           </div>
 
@@ -38,7 +38,7 @@ const FooterComponent = () => {
             <h4 className="text-gold-dignity font-semibold mb-6">Profil</h4>
             <ul className="space-y-4 text-sm text-gray-400">
               <li><a href="/profil/visi-misi" className="hover:text-white transition-colors">Visi & Misi</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Struktur Organisasi</a></li>
+              <li><a href="/profil/struktur" className="hover:text-white transition-colors">Struktur Organisasi</a></li>
               <li><a href="/profil/sejarah" className="hover:text-white transition-colors">Sejarah</a></li>
             </ul>
           </div>
@@ -57,7 +57,7 @@ const FooterComponent = () => {
               </li>
               <li className="flex items-center gap-3">
                 <span className="text-gold-dignity">✉️</span>
-                <span className="break-all">kontak@lapasblitar.go.id</span>
+                <span className="break-all">lapasblitar@gmail.com</span>
               </li>
             </ul>
           </div>

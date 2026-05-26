@@ -33,14 +33,22 @@ const NavbarAdmin = ({ onOpenSidebar }) => {
     // 1. Cek kecocokan statis terlebih dahulu
     const titles = {
       '/admin/dashboard': 'Dashboard',
+      '/admin/galeri-kegiatan': 'Galeri Kegiatan',
+      '/admin/list-pengaduan': 'Daftar Pengaduan',
+      '/admin/hak-akses': 'Manajemen Hak Akses',
+      '/admin/persyaratan-integrasi': 'Persyaratan Integrasi',
+      '/admin/layanan': 'Layanan Publik',
+      '/admin/alur-kunjungan': 'Alur Kunjungan',
+      '/admin/tata-tertib': 'Regulasi & Tata Tertib',
       '/admin/berita': 'Kelola Berita',
       '/admin/berita/tambah': 'Tambah Berita',
-      '/admin/layanan': 'Layanan Publik',
       '/admin/informasi': 'Informasi Publik',
-      '/admin/karya-wbp': 'Karya WBP',
-      '/admin/visi-misi': 'Visi & Misi',
       '/admin/struktur': 'Struktur Organisasi',
-      '/admin/sejarah': 'Sejarah Lapas'
+      '/admin/video': 'Kelola Video',
+      '/admin/set-slider': 'Pengaturan Slider',
+      '/admin/karya-wbp': 'Karya WBP',
+      '/admin/pesanan': 'Daftar Pesanan',
+      '/admin/keamanan': 'Modul Keamanan'
     };
 
     if (titles[path]) return titles[path];

@@ -1,6 +1,6 @@
 import React from 'react';
 import { 
-  LayoutDashboard, Newspaper, FileText, ShoppingCart, ShoppingBag, ShieldAlert, Users, MessageSquare, History, 
+  LayoutDashboard, Newspaper, FileText, ShoppingCart, ShoppingBag, Images, ShieldAlert, Users, Scale, MessageSquare, History, 
   Target, Map, LogOut, UserCheck, X 
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
@@ -36,13 +36,25 @@ const SidebarAdmin = ({ isOpen, setIsOpen }) => {
       name: 'Layanan Publik', 
       icon: <UserCheck size={18}/>, 
       path: '/admin/layanan',
-      roles: ['humas', 'pengawas'] 
+      roles: ['adkamtib','binadik','pengawas'] 
+    },
+    { 
+      name: 'Layanan Integrasi', 
+      icon: <FileText size={18}/>, 
+      path: '/admin/persyaratan-integrasi',
+      roles: ['binadik','pengawas'] 
     },
     { 
       name: 'Informasi Publik', 
-      icon: <FileText size={18}/>, 
+      icon: <Newspaper size={18}/>, 
       path: '/admin/informasi',
       roles: ['humas', 'pengawas'] 
+    },
+    { 
+      name: 'Kelola Tata Tertib', 
+      icon: <Scale size={18}/>, 
+      path: '/admin/tata-tertib',
+      roles: ['humas', 'pengawas', 'adkamtib'] 
     },
     { 
       name: 'Karya WBP', 
@@ -60,7 +72,7 @@ const SidebarAdmin = ({ isOpen, setIsOpen }) => {
       name: 'Alur Kunjungan', 
       icon: <Users size={18}/>, 
       path: '/admin/alur-kunjungan',
-      roles: ['humas', 'pengawas'] 
+      roles: ['adkamtib','binadik', 'pengawas'] 
     },
     {
       name: 'List Pengaduan',
@@ -71,6 +83,12 @@ const SidebarAdmin = ({ isOpen, setIsOpen }) => {
   ];
 
   const profileMenus = [
+    { 
+      name: 'Setting Slider', 
+      icon: <Images size={18}/>, 
+      path: '/admin/set-slider',
+      roles: ['humas', 'pengawas'] 
+    },
     { 
       name: 'Video Profil', 
       icon: <Target size={18}/>, 

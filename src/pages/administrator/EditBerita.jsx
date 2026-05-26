@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
+import Swal from 'sweetalert2'; // 1. Import SweetAlert2
 import { 
   ArrowLeft, Save, CheckCircle2, 
   FileEdit, Image as ImageIcon, Loader2, AlertCircle
 } from 'lucide-react';
 
-// --- IMPORT DARI UTILS API ---
 import { API_BASE_URL, IMG_BASE_URL } from '../../utils/api';
 
 const EditBerita = () => {
@@ -35,7 +35,6 @@ const EditBerita = () => {
     "Kegiatan Pimpinan", "Informasi Publik"
   ];
 
-  // 1. Ambil Data Lama Saat Halaman Dimuat
   useEffect(() => {
     const getDetailBerita = async () => {
       try {
@@ -51,7 +50,6 @@ const EditBerita = () => {
           status: data.status || 'Draft'
         });
 
-        // Set preview gambar lama menggunakan IMG_BASE_URL
         if (data.gambar) {
           setPreviewUrl(`${IMG_BASE_URL}${data.gambar}`);
         }
@@ -73,14 +71,37 @@ const EditBerita = () => {
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      if (file.size > 2 * 1024 * 1024) return alert("Maksimal ukuran file 2MB!");
+      if (file.size > 2 * 1024 * 1024) {
+        return Swal.fire({
+          icon: 'error',
+          title: 'File Terlalu Besar',
+          text: 'Maksimal ukuran file adalah 2MB!',
+          confirmButtonColor: '#0f172a'
+        });
+      }
       setSelectedFile(file);
-      // Buat preview URL untuk file baru yang dipilih
       setPreviewUrl(URL.createObjectURL(file));
     }
   };
 
-  // 2. Fungsi Kirim Update
+  // 2. Fungsi Konfirmasi Kembali
+  const handleBack = () => {
+    Swal.fire({
+      title: 'Batalkan Edit?',
+      text: "Perubahan yang belum disimpan akan hilang.",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#0f172a',
+      cancelButtonColor: '#94a3b8',
+      confirmButtonText: 'Ya, Kembali',
+      cancelButtonText: 'Lanjut Edit'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        navigate(-1);
+      }
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -93,7 +114,6 @@ const EditBerita = () => {
       data.append('isi', formData.isi);
       data.append('status', formData.status);
       
-      // Hanya tambahkan gambar ke FormData jika user memilih file baru
       if (selectedFile) {
         data.append('gambar', selectedFile);
       }
@@ -105,11 +125,25 @@ const EditBerita = () => {
         }
       });
 
-      alert("Berita Berhasil Diperbarui!");
+      // 3. SweetAlert Sukses
+      Swal.fire({
+        icon: 'success',
+        title: 'Berhasil!',
+        text: 'Artikel berita telah diperbarui.',
+        showConfirmButton: false,
+        timer: 2000
+      });
+      
       navigate('/admin/berita');
     } catch (err) {
       console.error("Update error:", err);
-      alert(err.response?.data?.message || "Gagal memperbarui berita.");
+      // 4. SweetAlert Gagal
+      Swal.fire({
+        icon: 'error',
+        title: 'Update Gagal',
+        text: err.response?.data?.message || "Gagal memperbarui berita.",
+        confirmButtonColor: '#0f172a'
+      });
     } finally {
       setLoading(false);
     }
@@ -139,7 +173,7 @@ const EditBerita = () => {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-slate-200 pb-8">
           <div>
-            <button type="button" onClick={() => navigate(-1)} className="group flex items-center gap-2 text-slate-400 hover:text-blue-600 mb-4">
+            <button type="button" onClick={handleBack} className="group flex items-center gap-2 text-slate-400 hover:text-blue-600 mb-4">
               <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
               <span className="text-[12px] font-black uppercase tracking-[3px]">Batal & Kembali</span>
             </button>
@@ -166,7 +200,6 @@ const EditBerita = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* Form Kiri (Konten) */}
           <div className="lg:col-span-8 space-y-8">
             <div className="bg-white rounded-[40px] p-10 shadow-sm space-y-10">
               <div className="space-y-3">
@@ -189,9 +222,7 @@ const EditBerita = () => {
             </div>
           </div>
 
-          {/* Sidebar Kanan (Metadata & Media) */}
           <div className="lg:col-span-4 space-y-8">
-            {/* Upload Gambar */}
             <div className="bg-white rounded-[40px] p-8 shadow-sm">
               <label className="text-[12px] font-black text-slate-400 uppercase tracking-[3px] mb-6 block">Gambar Utama</label>
               <div className="relative group rounded-[30px] overflow-hidden border border-slate-100 bg-slate-50 aspect-video flex items-center justify-center">
@@ -209,7 +240,6 @@ const EditBerita = () => {
               <p className="text-[10px] text-slate-400 mt-4 text-center italic">Format: JPG, PNG, WEBP (Maks. 2MB)</p>
             </div>
 
-            {/* Kategori & Simpan */}
             <div className="bg-white rounded-[40px] p-8 shadow-sm space-y-8">
               <div className="space-y-3">
                 <label className="text-[12px] font-black text-slate-400 uppercase tracking-[3px]">Kategori Berita</label>

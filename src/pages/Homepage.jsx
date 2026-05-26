@@ -17,49 +17,43 @@ import { API_BASE_URL, IMG_BASE_URL } from '../utils/api';
 const Homepage = () => {
   const [activeFaq, setActiveFaq] = useState(null);
   const [latestNews, setLatestNews] = useState([]);
+  const [sliders, setSliders] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Data untuk Slider (Bisa Anda sesuaikan gambarnya)
-  const sliderData = [
-    {
-      title: "Inovasi Digital",
-      highlight: "Pemasyarakatan",
-      desc: "Mewujudkan keterbukaan informasi dan kemudahan layanan bagi masyarakat melalui platform SI-PASTAR.",
-      image: "https://images.unsplash.com/photo-1555421689-491a97ff2040?q=80&w=2070", // Ganti dengan path lokal jika ada
-    },
-    {
-      title: "Layanan Publik",
-      highlight: "Tanpa Pungli",
-      desc: "Komitmen kami memberikan pelayanan terbaik, transparan, dan akuntabel kepada seluruh warga binaan dan keluarga.",
-      image: "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?q=80&w=2070",
-    },
-    {
-      title: "Pembinaan",
-      highlight: "Kemandirian",
-      desc: "Menciptakan warga binaan yang terampil dan siap kembali berkontribusi bagi masyarakat.",
-      image: "https://images.unsplash.com/photo-1517048676732-d65bc937f952?q=80&w=2070",
-    }
-  ];
+  // Manipulasi URL secara dinamis agar mengarah ke folder slider
+  const SLIDER_IMG_URL = IMG_BASE_URL.replace('berita', 'slider');
 
   useEffect(() => {
-    const fetchLatestNews = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`${API_BASE_URL}/berita`);
-        const data = response.data.data || response.data;
-        const filtered = data
+        
+        // 1. Fetch Berita
+        const newsRes = await axios.get(`${API_BASE_URL}/berita`);
+        const newsData = newsRes.data.data || newsRes.data;
+        const filteredNews = newsData
           .filter(item => item.status === 'Published')
           .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
           .slice(0, 3);
-        setLatestNews(filtered);
+        setLatestNews(filteredNews);
+
+        // 2. Fetch Slider
+        const sliderRes = await axios.get(`${API_BASE_URL}/slider`);
+        const sliderData = sliderRes.data.data || sliderRes.data;
+        const activeSliders = sliderData
+          .filter(s => s.status === 'Published')
+          .sort((a, b) => a.urutan - b.urutan);
+        setSliders(activeSliders);
+
       } catch (err) {
-        console.error("Gagal memuat berita:", err);
+        console.error("Gagal memuat data:", err);
       } finally {
         setLoading(false);
       }
     };
-    fetchLatestNews();
+
+    fetchData();
   }, []);
 
   const toggleFaq = (index) => {
@@ -70,59 +64,77 @@ const Homepage = () => {
     <div className="min-h-screen bg-midnight text-white overflow-x-hidden relative selection:bg-gold-dignity selection:text-midnight">
       
       {/* --- HERO SLIDER SECTION --- */}
-      <header className="relative h-screen w-full">
-        <Swiper
-          modules={[Autoplay, Pagination, EffectFade]}
-          effect="fade"
-          autoplay={{ delay: 5000, disableOnInteraction: false }}
-          pagination={{ clickable: true }}
-          loop={true}
-          className="h-full w-full"
-        >
-          {sliderData.map((slide, index) => (
-            <SwiperSlide key={index} className="relative">
-              {/* Background Image with Overlay */}
-              <div className="absolute inset-0 z-0">
-                <img src={slide.image} alt={slide.title} className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-b from-midnight/80 via-midnight/60 to-midnight"></div>
-              </div>
-
-              {/* Content */}
-              <div className="relative z-10 h-full flex items-center justify-center px-6">
-                <div className="max-w-7xl mx-auto flex flex-col items-center text-center">
-                  
-                  {/* Logos (Hanya muncul di slide 1 atau muncul terus di atas slider) */}
-                  <div className="flex items-center gap-6 md:gap-8 mb-12 animate-fadeIn">
-                    <img src={logoKemenimipas} alt="Logo" className="h-16 md:h-20 object-contain drop-shadow-lg" />
-                    <img src={logoDitjenpas} alt="Logo" className="h-16 md:h-20 object-contain drop-shadow-lg" />
-                  </div>
-
-                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-platinum text-sm mb-10 backdrop-blur-md">
-                    <span className="flex h-2 w-2 rounded-full bg-gold-dignity animate-ping"></span>
-                    SI-PASTAR: {slide.title}
-                  </div>
-
-                  <h1 className="text-5xl md:text-8xl font-extrabold tracking-tight mb-8 leading-tight">
-                    <span className="bg-gradient-to-b from-white to-gray-400 bg-clip-text text-transparent">{slide.title}</span>
-                    <br />
-                    <span className="text-gold-dignity italic drop-shadow-[0_0_20px_rgba(238,191,99,0.4)]">{slide.highlight}</span>
-                  </h1>
-
-                  <p className="max-w-2xl text-lg md:text-xl text-gray-400 leading-relaxed mb-12 font-light">
-                    {slide.desc}
-                  </p>
-
-                  <button 
-                    onClick={() => navigate('/form-layanan')}
-                    className="px-10 py-4 bg-gold-dignity hover:bg-white text-midnight rounded-xl font-bold transition-all shadow-xl active:scale-95"
-                  >
-                    Mulai Layanan Online →
-                  </button>
+      <header className="relative h-screen w-full bg-midnight">
+        {sliders.length > 0 ? (
+          <Swiper
+            modules={[Autoplay, Pagination, EffectFade]}
+            effect="fade"
+            autoplay={{ delay: 5000, disableOnInteraction: false }}
+            pagination={{ clickable: true }}
+            loop={sliders.length > 1}
+            className="h-full w-full"
+          >
+            {sliders.map((slide) => (
+              <SwiperSlide key={slide.id} className="relative">
+                {/* Background Image with Overlay */}
+                <div className="absolute inset-0 z-0">
+                  <img 
+                    src={`${SLIDER_IMG_URL}${slide.gambar}`} 
+                    alt={slide.judul} 
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = "https://images.unsplash.com/photo-1555421689-491a97ff2040?q=80&w=2070";
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-b from-midnight/80 via-midnight/60 to-midnight"></div>
                 </div>
-              </div>
-            </SwiperSlide>
-          ))}
-        </Swiper>
+
+                {/* Content */}
+                <div className="relative z-10 h-full flex items-center justify-center px-6">
+                  <div className="max-w-7xl mx-auto flex flex-col items-center text-center">
+                    
+                    {/* Logos */}
+                    <div className="flex items-center gap-6 md:gap-8 mb-12 animate-fadeIn">
+                      <img src={logoKemenimipas} alt="Kemenimipas" className="h-16 md:h-20 object-contain drop-shadow-lg" />
+                      <img src={logoDitjenpas} alt="Ditjenpas" className="h-16 md:h-20 object-contain drop-shadow-lg" />
+                    </div>
+
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-platinum text-sm mb-10 backdrop-blur-md">
+                      <span className="flex h-2 w-2 rounded-full bg-gold-dignity animate-ping"></span>
+                      SI-PASTAR: {slide.judul}
+                    </div>
+
+                    <h1 className="text-5xl md:text-8xl font-extrabold tracking-tight mb-8 leading-tight">
+                      <span className="bg-gradient-to-b from-white to-gray-400 bg-clip-text text-transparent">
+                        {slide.judul}
+                      </span>
+                      <br />
+                      <span className="text-gold-dignity italic drop-shadow-[0_0_20px_rgba(238,191,99,0.4)]">
+                        {slide.highlight}
+                      </span>
+                    </h1>
+
+                    <p className="max-w-2xl text-lg md:text-xl text-gray-400 leading-relaxed mb-12 font-light line-clamp-3">
+                      {slide.deskripsi}
+                    </p>
+
+                    <button 
+                      onClick={() => navigate('/form-layanan')}
+                      className="px-10 py-4 bg-gold-dignity hover:bg-white text-midnight rounded-xl font-bold transition-all shadow-xl active:scale-95"
+                    >
+                      Mulai Layanan Online →
+                    </button>
+                  </div>
+                </div>
+              </SwiperSlide>
+            ))}
+          </Swiper>
+        ) : (
+          <div className="h-full w-full flex items-center justify-center">
+             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gold-dignity"></div>
+          </div>
+        )}
 
         {/* CSS Custom untuk Pagination Swiper */}
         <style dangerouslySetInnerHTML={{ __html: `
@@ -131,9 +143,8 @@ const Homepage = () => {
         `}} />
       </header>
 
-      {/* --- SECTION 1: BERITA TERKINI (Tetap Sama) --- */}
+      {/* --- SECTION 1: BERITA TERKINI --- */}
       <section id="berita" className="relative py-24 px-6 bg-gold-dignity">
-        {/* ... (Konten Berita Anda sebelumnya) ... */}
         <div className="max-w-7xl mx-auto">
             <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-4">
                 <div>
@@ -147,20 +158,24 @@ const Homepage = () => {
                     Lihat Semua Berita ↗
                 </button>
             </div>
-            {/* Grid Berita */}
+            
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 {!loading ? (
                     latestNews.map((news) => (
                         <div key={news.id} className="group bg-white rounded-[2rem] overflow-hidden shadow-2xl hover:-translate-y-3 transition-all duration-500 border border-white/50 flex flex-col">
                             <div className="h-60 bg-slate-200 relative overflow-hidden">
-                                <img src={`${IMG_BASE_URL}${news.gambar}`} alt={news.judul} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                <img 
+                                  src={`${IMG_BASE_URL}${news.gambar}`} 
+                                  alt={news.judul} 
+                                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
+                                />
                                 <div className="absolute top-5 left-5 bg-gold-dignity text-midnight text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-widest">
                                     {news.kategori || 'Terbaru'}
                                 </div>
                             </div>
                             <div className="p-8 flex flex-col flex-1">
                                 <div className="flex items-center gap-2 mb-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                                    <span>{new Date(news.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                                    <span>{new Date(news.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                                 </div>
                                 <h3 className="text-xl font-bold mb-4 text-midnight leading-snug line-clamp-2">{news.judul}</h3>
                                 <div onClick={() => navigate(`/berita/${news.id}`)} className="mt-auto flex items-center gap-2 text-midnight font-bold text-sm cursor-pointer group/btn">
@@ -190,7 +205,6 @@ const Homepage = () => {
                 { name: 'Facebook', url: 'https://www.facebook.com/BlitarLapas' },
                 { name: 'Youtube', url: 'https://www.youtube.com/@lapasblitar4625' },
                 { name: 'Twitter', url: 'https://x.com/BlitarLapa38077' },
-                { name: 'Thread', url: 'https://www.threads.com/@lapasblitar'},
                 { name: 'Tiktok', url: 'https://www.tiktok.com/@pastarberkarya'}
               ].map((soc) => (
                 <a key={soc.name} href={soc.url} target="_blank" rel="noopener noreferrer" 

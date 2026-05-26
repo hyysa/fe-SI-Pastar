@@ -1,12 +1,13 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import axios from 'axios';
+import Swal from 'sweetalert2'; // 1. Import SweetAlert2
 import { 
   flexRender, 
   getCoreRowModel, 
   useReactTable, 
 } from '@tanstack/react-table';
 import { 
-  Save, UserPlus, Image as ImageIcon, Trash2, Edit2, X, User
+  Save, UserPlus, Image as ImageIcon, Trash2, Edit2, X, User, Loader2
 } from 'lucide-react';
 
 import { API_BASE_URL, IMG_BASE_URL, getAuthHeader } from '../../utils/api';
@@ -14,8 +15,8 @@ import { API_BASE_URL, IMG_BASE_URL, getAuthHeader } from '../../utils/api';
 const DataStruktur = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [data, setData] = useState([]);
-  // Tambahkan state untuk melacak ID yang sedang diedit
   const [editingId, setEditingId] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [formData, setFormData] = useState({
     nama: '',
@@ -40,7 +41,6 @@ const DataStruktur = () => {
     fetchData();
   }, []);
 
-  // --- FUNGSI UNTUK MEMBUKA MODAL EDIT ---
   const handleEdit = (rowData) => {
     setEditingId(rowData.id);
     setFormData({
@@ -48,21 +48,21 @@ const DataStruktur = () => {
       jabatan: rowData.jabatan,
       bidang: rowData.bidang,
       level: rowData.level,
-      foto: null, // Reset input file
-      preview: rowData.url // Gunakan URL foto yang sudah ada sebagai preview
+      foto: null,
+      preview: rowData.url 
     });
     setIsModalOpen(true);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
+
     const payload = new FormData();
     payload.append("nama", formData.nama);
     payload.append("jabatan", formData.jabatan);
     payload.append("bidang", formData.bidang);
     payload.append("level", formData.level);
-    
-    // Hanya kirim foto jika user memilih file baru
     if (formData.foto) payload.append("foto", formData.foto);
 
     try {
@@ -75,24 +75,41 @@ const DataStruktur = () => {
       };
 
       if (editingId) {
-        // JIKA EDIT: Gunakan method PUT/PATCH
         await axios.patch(`${API_BASE_URL}/struktur/${editingId}`, payload, config);
-        alert("Data berhasil diperbarui");
+        // 2. SweetAlert Sukses Update
+        Swal.fire({
+          icon: 'success',
+          title: 'Berhasil diperbarui',
+          text: 'Data pejabat telah diperbarui dalam sistem.',
+          showConfirmButton: false,
+          timer: 1500
+        });
       } else {
-        // JIKA TAMBAH BARU: Gunakan method POST
         await axios.post(`${API_BASE_URL}/struktur`, payload, config);
-        alert("Data berhasil disimpan");
+        // 3. SweetAlert Sukses Simpan
+        Swal.fire({
+          icon: 'success',
+          title: 'Berhasil disimpan',
+          text: 'Pejabat baru telah ditambahkan ke struktur.',
+          showConfirmButton: false,
+          timer: 1500
+        });
       }
 
       closeModal();
       fetchData();
     } catch (error) {
-      console.error(error);
-      alert(error.response?.data?.msg || "Gagal memproses data");
+      // 4. SweetAlert Error
+      Swal.fire({
+        icon: 'error',
+        title: 'Gagal memproses data',
+        text: error.response?.data?.msg || "Terjadi kesalahan sistem"
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  // Fungsi helper untuk reset modal
   const closeModal = () => {
     setIsModalOpen(false);
     setEditingId(null);
@@ -100,12 +117,31 @@ const DataStruktur = () => {
   };
 
   const deletePejabat = async (id) => {
-    if (window.confirm("Apakah Anda yakin ingin menghapus data ini?")) {
+    // 5. SweetAlert Konfirmasi Hapus
+    const result = await Swal.fire({
+      title: 'Hapus data ini?',
+      text: "Data yang dihapus tidak dapat dikembalikan!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#0f172a',
+      cancelButtonColor: '#f43f5e',
+      confirmButtonText: 'Ya, Hapus!',
+      cancelButtonText: 'Batal'
+    });
+
+    if (result.isConfirmed) {
       try {
         await axios.delete(`${API_BASE_URL}/struktur/${id}`, getAuthHeader());
+        Swal.fire({
+          icon: 'success',
+          title: 'Terhapus!',
+          text: 'Data telah dihapus dari database.',
+          showConfirmButton: false,
+          timer: 1000
+        });
         fetchData();
       } catch (error) {
-        alert("Gagal menghapus data");
+        Swal.fire('Gagal!', 'Tidak dapat menghapus data.', 'error');
       }
     }
   };
@@ -168,7 +204,6 @@ const DataStruktur = () => {
       header: 'AKSI',
       cell: (info) => (
         <div className="flex gap-1">
-          {/* AKTIFKAN BUTTON EDIT DI SINI */}
           <button 
             onClick={() => handleEdit(info.row.original)}
             className="p-2 text-slate-400 hover:text-blue-600 rounded-xl transition-all"
@@ -204,7 +239,12 @@ const DataStruktur = () => {
     const file = e.target.files[0];
     if (file) {
       if (file.size > 2 * 1024 * 1024) {
-        alert("Ukuran file terlalu besar! Maksimal adalah 2MB.");
+        // 6. SweetAlert Peringatan File
+        Swal.fire({
+          icon: 'warning',
+          title: 'File terlalu besar',
+          text: 'Maksimal ukuran file adalah 2MB.'
+        });
         return;
       }
       setFormData({
@@ -324,8 +364,17 @@ const DataStruktur = () => {
                 </select>
               </div>
 
-              <button type="submit" className="w-full bg-slate-900 text-white font-black py-5 rounded-[22px] flex items-center justify-center gap-3 hover:bg-black transition-all shadow-xl tracking-[0.2em] text-[11px]">
-                <Save size={18} /> {editingId ? "UPDATE DATA" : "SIMPAN DATA"}
+              <button 
+                type="submit" 
+                disabled={isSubmitting}
+                className="w-full bg-slate-900 text-white font-black py-5 rounded-[22px] flex items-center justify-center gap-3 hover:bg-black transition-all shadow-xl tracking-[0.2em] text-[11px] disabled:opacity-70"
+              >
+                {isSubmitting ? (
+                  <Loader2 className="animate-spin" size={18} />
+                ) : (
+                  <Save size={18} />
+                )}
+                {editingId ? "UPDATE DATA" : "SIMPAN DATA"}
               </button>
             </form>
           </div>

@@ -4,9 +4,11 @@ import Swal from 'sweetalert2';
 import { 
   Search, Eye, CheckCircle, XCircle, 
   Users, Calendar, Phone, Fingerprint, Clock, Loader2, X, MapPin, User, Tag, MessageCircle, 
-  Hash, Mail, Settings, Save, ChevronUp, ChevronDown
+  Hash, Mail, Settings, Save, ChevronUp, ChevronDown, Printer
 } from 'lucide-react';
 import { API_BASE_URL } from '../../utils/api';
+// Import fungsi cetak dari file PrintStruk
+import { generatePrintHTML } from './PrintStruk'; 
 
 const LayananPublik = () => {
   const [dataKunjungan, setDataKunjungan] = useState([]);
@@ -50,6 +52,23 @@ const LayananPublik = () => {
     fetchSettings();
   }, []);
 
+  // --- LOGIC CETAK ---
+  const handlePrint = (item) => {
+    const printContent = generatePrintHTML(item);
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+    } else {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Pop-up Terblokir',
+        text: 'Mohon izinkan pop-up pada browser Anda untuk mencetak struk.',
+        confirmButtonColor: '#3b82f6'
+      });
+    }
+  };
+
   // --- LOGIC SORTING ---
   const requestSort = (key) => {
     let direction = 'asc';
@@ -71,10 +90,11 @@ const LayananPublik = () => {
     }
     try {
       setIsUpdatingLimit(true);
+      // Menggunakan PUT sesuai dengan fungsi yang Anda buat sebelumnya
       await axios.put(`${API_BASE_URL}/settings`, { newValue: parseInt(maxLimit) });
       Swal.fire({ icon: 'success', title: 'Berhasil!', text: `Kuota rombongan diperbarui menjadi ${maxLimit} orang.`, timer: 2000, showConfirmButton: false });
     } catch (error) {
-      Swal.fire({ icon: 'error', title: 'Gagal Update', text: 'Terjadi kesalahan pada server (500).' });
+      Swal.fire({ icon: 'error', title: 'Gagal Update', text: 'Terjadi kesalahan pada server atau rute tidak ditemukan.' });
     } finally {
       setIsUpdatingLimit(false);
     }
@@ -209,7 +229,6 @@ const LayananPublik = () => {
               </thead>
               <tbody className="divide-y divide-slate-50">
                 {sortedAndFilteredData.map((item) => {
-                  // Parsing pengikut jika dalam bentuk string JSON
                   const pengikut = Array.isArray(item.pengikut) ? item.pengikut : (JSON.parse(item.pengikut || '[]'));
                   
                   return (
@@ -245,6 +264,10 @@ const LayananPublik = () => {
                       </td>
                       <td className="px-6 py-5 text-center">
                         <div className="flex items-center justify-center gap-1">
+                          {/* TOMBOL CETAK STRUK */}
+                          <button onClick={() => handlePrint(item)} title="Cetak Struk" className="p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-all">
+                            <Printer size={18} />
+                          </button>
                           <a href={getWhatsAppLink(item.nomorWa, item.namaPengunjung)} target="_blank" rel="noreferrer" className="p-2 text-green-500 hover:bg-green-50 rounded-lg"><MessageCircle size={18} /></a>
                           <button onClick={() => setSelectedDetail(item)} className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg"><Eye size={18} /></button>
                           <button onClick={() => handleUpdateStatus(item.id, 'Disetujui')} className="p-2 text-slate-300 hover:text-green-600"><CheckCircle size={18} /></button>
@@ -269,7 +292,13 @@ const LayananPublik = () => {
               <h3 className="text-xl font-black text-slate-800 flex items-center gap-3 italic uppercase">
                 <div className="p-2 bg-blue-50 text-blue-600 rounded-xl"><User size={20}/></div> Detail Pengunjung
               </h3>
-              <button onClick={() => setSelectedDetail(null)} className="p-2 hover:bg-slate-100 rounded-full text-slate-400"><X size={20} /></button>
+              <div className="flex items-center gap-2">
+                {/* TOMBOL CETAK DI DALAM MODAL */}
+                <button onClick={() => handlePrint(selectedDetail)} className="p-2 bg-slate-100 text-slate-600 hover:bg-slate-900 hover:text-white rounded-xl transition-all flex items-center gap-2 text-[10px] font-bold uppercase px-4">
+                  <Printer size={16}/> Cetak
+                </button>
+                <button onClick={() => setSelectedDetail(null)} className="p-2 hover:bg-slate-100 rounded-full text-slate-400"><X size={20} /></button>
+              </div>
             </div>
             
             <div className="p-8 space-y-8">

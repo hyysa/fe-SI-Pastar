@@ -280,7 +280,7 @@ const FormLayanan = () => {
                   <input type="file" accept="image/*" required className="absolute inset-0 opacity-0 cursor-pointer" onChange={handleFileChange} />
                   <div className="flex flex-col items-center gap-2">
                     <div className="p-4 bg-amber-50 text-amber-600 rounded-2xl group-hover:rotate-12 transition-transform"><Camera size={32} /></div>
-                    <p className="font-black text-slate-700 text-sm uppercase">Pilih Foto KTP</p>
+                    <p className="font-black text-slate-700 text-sm uppercase">Unggah Foto Bersama</p>
                   </div>
                 </div>
               ) : (

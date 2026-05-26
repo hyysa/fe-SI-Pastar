@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import Swal from 'sweetalert2'; // 1. Import SweetAlert2
 import { 
   useReactTable, 
   getCoreRowModel, 
@@ -16,7 +17,6 @@ import {
   History
 } from 'lucide-react';
 
-// Import konfigurasi dinamis
 import { API_BASE_URL, IMG_BASE_URL, getAuthHeader } from '../../utils/api';
 
 const KelolaBerita = () => {
@@ -27,7 +27,6 @@ const KelolaBerita = () => {
   const [globalFilter, setGlobalFilter] = useState(''); 
   const [sorting, setSorting] = useState([{ id: 'created_at', desc: true }]);
 
-  // Debounce search
   useEffect(() => {
     const timeout = setTimeout(() => {
       setGlobalFilter(searchValue);
@@ -35,7 +34,6 @@ const KelolaBerita = () => {
     return () => clearTimeout(timeout);
   }, [searchValue]);
 
-  // Ambil Data Berita
   const fetchBerita = async () => {
     try {
       setLoading(true);
@@ -44,6 +42,7 @@ const KelolaBerita = () => {
       setDataBerita(Array.isArray(result) ? result : []);
     } catch (error) {
       console.error("Gagal mengambil data:", error);
+      Swal.fire('Error', 'Gagal memuat data berita', 'error');
     } finally {
       setLoading(false);
     }
@@ -51,26 +50,67 @@ const KelolaBerita = () => {
 
   useEffect(() => { fetchBerita(); }, []);
 
-  // Update Status
+  // 2. SweetAlert untuk Toggle Status
   const handleToggleStatus = async (id, currentStatus) => {
     const newStatus = currentStatus === 'Draft' ? 'Published' : 'Draft';
-    if (!window.confirm(`Ubah status berita menjadi ${newStatus}?`)) return;
-    try {
-      await axios.put(`${API_BASE_URL}/berita/status/${id}`, { status: newStatus }, getAuthHeader());
-      setDataBerita(prev => prev.map(item => item.id === id ? { ...item, status: newStatus } : item));
-    } catch (error) { 
-      alert("Gagal update status."); 
+    
+    const result = await Swal.fire({
+      title: 'Ubah Status?',
+      text: `Apakah Anda yakin ingin mengubah status menjadi ${newStatus}?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#0f172a', // Slate 900
+      cancelButtonColor: '#94a3b8', // Slate 400
+      confirmButtonText: 'Ya, Ubah!',
+      cancelButtonText: 'Batal'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await axios.put(`${API_BASE_URL}/berita/status/${id}`, { status: newStatus }, getAuthHeader());
+        setDataBerita(prev => prev.map(item => item.id === id ? { ...item, status: newStatus } : item));
+        
+        Swal.fire({
+          icon: 'success',
+          title: 'Berhasil!',
+          text: `Berita telah di-${newStatus}`,
+          timer: 1500,
+          showConfirmButton: false
+        });
+      } catch (error) { 
+        Swal.fire('Gagal', 'Gagal memperbarui status berita', 'error');
+      }
     }
   };
 
-  // Hapus Berita
+  // 3. SweetAlert untuk Hapus Berita
   const handleDelete = async (id) => {
-    if (!window.confirm("Hapus berita permanen?")) return;
-    try {
-      await axios.delete(`${API_BASE_URL}/berita/${id}`, getAuthHeader());
-      setDataBerita(prev => prev.filter(item => item.id !== id));
-    } catch (error) { 
-      alert("Gagal menghapus."); 
+    const result = await Swal.fire({
+      title: 'Hapus Berita?',
+      text: "Data yang dihapus tidak dapat dikembalikan secara permanen!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#e11d48', // Rose 600
+      cancelButtonColor: '#94a3b8',
+      confirmButtonText: 'Ya, Hapus!',
+      cancelButtonText: 'Batal'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await axios.delete(`${API_BASE_URL}/berita/${id}`, getAuthHeader());
+        setDataBerita(prev => prev.filter(item => item.id !== id));
+        
+        Swal.fire({
+          icon: 'success',
+          title: 'Terhapus!',
+          text: 'Berita berhasil dihapus.',
+          timer: 1500,
+          showConfirmButton: false
+        });
+      } catch (error) { 
+        Swal.fire('Gagal', 'Gagal menghapus berita tersebut', 'error');
+      }
     }
   };
 
@@ -86,8 +126,6 @@ const KelolaBerita = () => {
       header: 'Informasi Berita',
       cell: ({ row }) => {
         const item = row.original;
-        
-        // Format Tanggal Kegiatan (dari kolom 'tanggal' di database)
         const formatTglKegiatan = (tgl) => {
           if(!tgl) return "Tanggal tidak set";
           return new Date(tgl).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -105,15 +143,12 @@ const KelolaBerita = () => {
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-[11px] md:text-[13px] font-bold text-slate-700 leading-tight line-clamp-2">{item.judul}</p>
-              
-              {/* TANGGAL KEGIATAN (Di bawah Judul) */}
               <div className="flex items-center gap-1 mt-1 text-blue-500">
                 <Calendar size={10} className="shrink-0" />
                 <span className="text-[9px] md:text-[10px] font-bold italic">
                   Kegiatan: {formatTglKegiatan(item.tanggal)}
                 </span>
               </div>
-
               <span className="md:hidden px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded text-[8px] font-black uppercase italic tracking-tighter mt-1 inline-block">
                 {item.kategori}
               </span>
@@ -173,10 +208,10 @@ const KelolaBerita = () => {
         const isDraft = row.original.status === 'Draft';
         return (
           <div className="flex items-center justify-center gap-1">
-            <button onClick={() => navigate(`/admin/berita/detail/${row.original.id}`)} className="p-1.5 bg-blue-50 text-blue-500 rounded-lg border border-blue-100 hover:bg-blue-500 hover:text-white transition-all"><Eye size={14} /></button>
-            <button onClick={() => handleToggleStatus(row.original.id, row.original.status)} className={`p-1.5 rounded-lg border transition-all ${isDraft ? 'bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-600 hover:text-white' : 'bg-amber-50 text-amber-600 border-amber-100 hover:bg-amber-600 hover:text-white'}`}>{isDraft ? <Globe size={14} /> : <FileEdit size={14} />}</button>
-            <button onClick={() => navigate(`/admin/berita/edit/${row.original.id}`)} className="p-1.5 bg-slate-50 text-slate-400 rounded-lg border border-slate-100 hover:bg-slate-200 hover:text-slate-600"><Edit2 size={14} /></button>
-            <button onClick={() => handleDelete(row.original.id)} className="p-1.5 bg-red-50 text-red-400 rounded-lg border border-red-100 hover:bg-red-500 hover:text-white transition-all"><Trash2 size={14} /></button>
+            <button onClick={() => navigate(`/admin/berita/detail/${row.original.id}`)} className="p-1.5 bg-blue-50 text-blue-500 rounded-lg border border-blue-100 hover:bg-blue-500 hover:text-white transition-all" title="Detail"><Eye size={14} /></button>
+            <button onClick={() => handleToggleStatus(row.original.id, row.original.status)} className={`p-1.5 rounded-lg border transition-all ${isDraft ? 'bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-600 hover:text-white' : 'bg-amber-50 text-amber-600 border-amber-100 hover:bg-amber-600 hover:text-white'}`} title={isDraft ? "Terbitkan" : "Arsipkan"}>{isDraft ? <Globe size={14} /> : <FileEdit size={14} />}</button>
+            <button onClick={() => navigate(`/admin/berita/edit/${row.original.id}`)} className="p-1.5 bg-slate-50 text-slate-400 rounded-lg border border-slate-100 hover:bg-slate-200 hover:text-slate-600" title="Edit"><Edit2 size={14} /></button>
+            <button onClick={() => handleDelete(row.original.id)} className="p-1.5 bg-red-50 text-red-400 rounded-lg border border-red-100 hover:bg-red-500 hover:text-white transition-all" title="Hapus"><Trash2 size={14} /></button>
           </div>
         );
       }
@@ -198,6 +233,7 @@ const KelolaBerita = () => {
 
   return (
     <div className="p-2 md:p-6 space-y-4 max-w-full overflow-hidden bg-slate-50/30 min-h-screen font-sans text-slate-900">
+      {/* Stat Cards Section */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 px-1">
         {[
           { label: 'Total Berita', val: dataBerita.length, icon: <Newspaper />, color: 'blue' },
@@ -215,6 +251,7 @@ const KelolaBerita = () => {
       </div>
 
       <div className="bg-white rounded-[24px] md:rounded-[32px] shadow-sm border border-slate-100 overflow-hidden mx-1">
+        {/* Header & Search */}
         <div className="p-5 md:p-8 space-y-4 border-b border-slate-50">
           <div className="flex justify-between items-center gap-2">
             <div>
@@ -229,6 +266,7 @@ const KelolaBerita = () => {
           </div>
         </div>
 
+        {/* Table Section */}
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-slate-100">
             <thead className="bg-slate-50/50">
@@ -261,6 +299,7 @@ const KelolaBerita = () => {
           </table>
         </div>
 
+        {/* Pagination Section */}
         <div className="px-5 py-4 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between">
           <p className="text-[10px] md:text-xs font-bold text-slate-500 uppercase tracking-tighter">Halaman {table.getState().pagination.pageIndex + 1} dari {table.getPageCount()}</p>
           <div className="flex gap-1.5">
